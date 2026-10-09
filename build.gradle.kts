@@ -28,3 +28,11 @@ val standaloneJar by tasks.registering(Jar::class) {
     exclude("module-info.class", "META-INF/versions/**/module-info.class")
 }
 tasks.assemble { dependsOn(standaloneJar) }
+
+// Override with -PtoolsDir=/another/path when installing on another machine.
+tasks.register<Copy>("installStandaloneJar") {
+    group = "distribution"
+    description = "Builds the standalone JAR and copies it to /home/dominik/Tools (or -PtoolsDir)."
+    from(standaloneJar.flatMap { it.archiveFile })
+    into(providers.gradleProperty("toolsDir").orElse("/home/dominik/Tools"))
+}

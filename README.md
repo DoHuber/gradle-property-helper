@@ -46,6 +46,16 @@ only Java 21 and a graphical desktop are needed to run it. The feature JSON
 is selected separately in Settings (the example JSON is not bundled).
 `./gradlew build` also produces the standalone JAR.
 
+To build and copy the JAR to `/home/dominik/Tools` in one step:
+
+```sh
+./gradlew installStandaloneJar
+```
+
+The task creates the destination directory if needed and replaces the previous
+`gradle-property-helper-standalone.jar` there. Override the destination with
+`./gradlew installStandaloneJar -PtoolsDir=/another/path`.
+
 ## Build and test
 
 ```sh
