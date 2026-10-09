@@ -1,6 +1,9 @@
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
+import java.awt.GridBagLayout
+import java.awt.GridBagConstraints
+import java.awt.Insets
 import java.nio.file.Path
 import javax.swing.*
 
@@ -17,7 +20,7 @@ class HelperWindow : JFrame("Gradle Property Helper") {
     private var file: Path? = null
     private var config: FeatureConfig? = null
     private var snapshot = ""
-    private val rows = JPanel().apply { layout = BoxLayout(this, BoxLayout.Y_AXIS) }
+    private val rows = JPanel(GridBagLayout())
     private val status = JLabel("Open Settings to choose gradle.properties and feature configuration.")
     private val projectLabel = JLabel("No properties file selected")
     private val configLabel = JLabel("No configuration selected")
@@ -136,15 +139,20 @@ class HelperWindow : JFrame("Gradle Property Helper") {
     }
     private fun render() {
         rows.removeAll()
-        if (file != null) config?.features?.forEach { feature ->
+        if (file != null) config?.features?.forEachIndexed { index, feature ->
             val state = PropertiesEditor.state(snapshot, feature)
-            rows.add(JPanel(FlowLayout(FlowLayout.LEFT, 8, 3)).apply {
-                alignmentX = LEFT_ALIGNMENT
+            fun cell(column: Int) = GridBagConstraints().apply {
+                gridx = column; gridy = index
+                anchor = GridBagConstraints.WEST
+                weightx = if (column == 1) 1.0 else 0.0
+                insets = Insets(3, 8, 3, 8)
+            }
+            run {
                 val nextEnabled = state != FeatureState.ENABLED
                 val values = if (nextEnabled) feature.enabled else feature.disabled
                 val details = PropertiesEditor.stateDetails(snapshot, feature)
-                add(JLabel(feature.label).apply { toolTipText = details })
-                add(StateToggleButton(state).apply {
+                rows.add(JLabel(feature.label).apply { toolTipText = details }, cell(0))
+                rows.add(StateToggleButton(state).apply {
                     toolTipText = PropertiesEditor.stateDetails(snapshot, feature) +
                         "; Click to " + (if (nextEnabled) "enable" else "disable") + " this group."
                     accessibleContext.accessibleName = "${feature.label}: $text"
@@ -160,8 +168,8 @@ class HelperWindow : JFrame("Gradle Property Helper") {
                             render(); status.text = "Saved ${feature.label}. Previous file backed up as gradle.properties.bak."
                         }
                     }
-                })
-            })
+                }, cell(1))
+            }
         }
         rows.revalidate(); rows.repaint()
     }
