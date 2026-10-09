@@ -20,6 +20,20 @@ Comments, unrelated entries and existing line endings are retained. Matching dup
 
 Before replacing an existing file, the app copies it to `gradle.properties.bak` (overwriting the previous backup). External edits detected since loading block the save until Refresh. There is no cross-process file lock, so avoid simultaneous writes by other tools. Symbolic-link property files are rejected. Atomic replacement must be supported by the filesystem. The app edits project-local properties only; it does not launch Gradle or edit user-wide properties.
 
+## Standalone JAR
+
+Build a single executable JAR with its runtime dependencies included:
+
+```sh
+./gradlew standaloneJar
+java -jar build/libs/gradle-property-helper-standalone.jar
+```
+
+On Windows, use `gradlew.bat standaloneJar`. You can copy this JAR anywhere;
+only Java 21 and a graphical desktop are needed to run it. The feature JSON
+is selected separately in Settings (the example JSON is not bundled).
+`./gradlew build` also produces the standalone JAR.
+
 ## Build and test
 
 ```sh
