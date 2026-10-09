@@ -18,8 +18,8 @@ class HelperWindow : JFrame("Gradle Property Helper") {
     private var config: FeatureConfig? = null
     private var snapshot = ""
     private val rows = JPanel().apply { layout = BoxLayout(this, BoxLayout.Y_AXIS) }
-    private val status = JLabel("Open Settings to choose a project and feature configuration.")
-    private val projectLabel = JLabel("No project selected")
+    private val status = JLabel("Open Settings to choose gradle.properties and feature configuration.")
+    private val projectLabel = JLabel("No properties file selected")
     private val configLabel = JLabel("No configuration selected")
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -30,7 +30,7 @@ class HelperWindow : JFrame("Gradle Property Helper") {
                 file?.let { snapshot = PropertiesEditor.read(it) }; render(); status.text = "Refreshed from disk."
             } } }, BorderLayout.WEST)
             add(JButton("⚙ Settings").apply {
-                toolTipText = "Choose project and feature configuration"
+                toolTipText = "Choose gradle.properties and feature configuration"
                 accessibleContext.accessibleName = "Settings"
                 addActionListener { showSettings() }
             }, BorderLayout.EAST)
@@ -47,13 +47,13 @@ class HelperWindow : JFrame("Gradle Property Helper") {
         file = restored.propertiesFile
         snapshot = restored.propertiesText
         config = restored.featureConfig
-        projectLabel.text = settings.projectDirectory ?: "No project selected"
+        projectLabel.text = restored.propertiesFile?.toString() ?: settings.projectDirectory ?: "No properties file selected"
         configLabel.text = settings.featureConfigPath ?: "No configuration selected"
         render()
         status.text = when {
             restored.warnings.isNotEmpty() -> "Some settings could not be restored. Open Settings to select them again."
             file != null && config != null -> "Restored saved project and feature configuration."
-            else -> "Open Settings to choose a project and feature configuration."
+            else -> "Open Settings to choose gradle.properties and feature configuration."
         }
         if (restored.warnings.isNotEmpty()) SwingUtilities.invokeLater {
             JOptionPane.showMessageDialog(this, restored.warnings.joinToString("\n"), "Settings restoration", JOptionPane.WARNING_MESSAGE)
@@ -74,17 +74,28 @@ class HelperWindow : JFrame("Gradle Property Helper") {
             controls.add(label)
             controls.add(Box.createVerticalStrut(12))
         }
-        addControl(projectLabel, "Choose project…") {
-            val chooser = JFileChooser().apply { fileSelectionMode = JFileChooser.DIRECTORIES_ONLY }
+        addControl(projectLabel, "Choose gradle.properties…") {
+            val chooser = JFileChooser().apply {
+                fileSelectionMode = JFileChooser.FILES_ONLY
+                isAcceptAllFileFilterUsed = false
+                fileFilter = object : javax.swing.filechooser.FileFilter() {
+                    override fun accept(candidate: java.io.File) = candidate.isDirectory || candidate.name == "gradle.properties"
+                    override fun getDescription() = "Gradle properties (gradle.properties)"
+                }
+                file?.let { selectedFile = it.toFile() }
+            }
             if (chooser.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION) {
-                val directory = chooser.selectedFile.toPath().toAbsolutePath().normalize()
-                require(java.nio.file.Files.isDirectory(directory)) { "Project directory is unavailable: $directory" }
-                val selected = directory.resolve("gradle.properties")
+                val selected = chooser.selectedFile.toPath().toAbsolutePath().normalize()
+                require(selected.fileName.toString() == "gradle.properties" && java.nio.file.Files.isRegularFile(selected)) {
+                    "Select an existing gradle.properties file: $selected"
+                }
+                require(!java.nio.file.Files.isSymbolicLink(selected)) { "Symbolic-link property files are not supported: $selected" }
                 val content = PropertiesEditor.read(selected)
                 java.util.Properties().load(content.reader())
-                val updated = settings.copy(projectDirectory = directory.toString())
+                val updated = settings.copy(projectDirectory = selected.parent.toString())
                 settingsStore.save(updated); settings = updated
                 file = selected; snapshot = content; projectLabel.text = selected.toString(); render()
+                status.text = "Selected properties file: $selected"
                 dialog.pack()
             }
         }
