@@ -26,15 +26,21 @@ class PropertiesEditorTest {
         val path = directory.resolve("gradle.properties")
         Files.writeString(path, "url=old\n")
         val updated = PropertiesEditor.apply(path, "url=old\n", feature.enabled)
-        assertEquals(updated, PropertiesEditor.read(path))
-        assertEquals("url=old\n", Files.readString(directory.resolve("gradle.properties.bak")))
+        assertEquals(updated.text, PropertiesEditor.read(path))
+        val backup = assertNotNull(updated.backupPath)
+        try {
+            assertEquals(Path.of(System.getProperty("java.io.tmpdir")).toRealPath(), backup.parent.toRealPath())
+            assertEquals("url=old\n", Files.readString(backup))
+            assertFalse(Files.exists(directory.resolve("gradle.properties.bak")))
+        } finally { Files.deleteIfExists(backup) }
         Files.writeString(path, "external=true\n")
-        assertFailsWith<IllegalStateException> { PropertiesEditor.apply(path, updated, feature.disabled) }
+        assertFailsWith<IllegalStateException> { PropertiesEditor.apply(path, updated.text, feature.disabled) }
         assertEquals("external=true\n", Files.readString(path))
     }
     @Test fun `creates missing file and configuration rejects conflicting keys`() {
         val path = directory.resolve("gradle.properties")
-        PropertiesEditor.apply(path, "", feature.enabled)
+        val saved = PropertiesEditor.apply(path, "", feature.enabled)
+        assertNull(saved.backupPath)
         assertEquals(FeatureState.ENABLED, PropertiesEditor.state(PropertiesEditor.read(path), feature))
         assertFailsWith<IllegalArgumentException> { FeatureConfig(listOf(feature, feature.copy(id = "duplicate"))).validate() }
     }
@@ -58,5 +64,25 @@ class PropertiesEditorTest {
         assertTrue(details.contains("url: matches enabled"))
         assertTrue(details.contains("auth: value matches neither state"))
         assertTrue(PropertiesEditor.stateDetails("", feature).contains("url: missing"))
+    }
+    @Test fun `successive saves keep separate temp backups and leave project sidecars untouched`() {
+        val path = directory.resolve("gradle.properties")
+        val sidecar = directory.resolve("gradle.properties.bak")
+        Files.writeString(path, "url=old\n")
+        Files.writeString(sidecar, "existing user backup")
+        val backups = mutableListOf<Path>()
+        try {
+            val first = PropertiesEditor.apply(path, "url=old\n", feature.enabled)
+            backups.add(assertNotNull(first.backupPath))
+            val second = PropertiesEditor.apply(path, first.text, feature.disabled)
+            backups.add(assertNotNull(second.backupPath))
+            assertNotEquals(backups[0], backups[1])
+            assertEquals("url=old\n", Files.readString(backups[0]))
+            assertEquals(first.text, Files.readString(backups[1]))
+            assertEquals("existing user backup", Files.readString(sidecar))
+            Files.list(directory).use { files ->
+                assertEquals(setOf("gradle.properties", "gradle.properties.bak"), files.map { it.fileName.toString() }.toList().toSet())
+            }
+        } finally { backups.forEach { Files.deleteIfExists(it) } }
     }
 }

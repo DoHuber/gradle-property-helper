@@ -6,8 +6,8 @@ import java.nio.file.NoSuchFileException
 object ErrorMessages {
     fun describe(error: Exception): String = when (error) {
         is AccessDeniedException -> "Permission denied: ${error.file ?: "file access"}.\n" +
-            "Check file and directory permissions. Saving requires write access to the project directory " +
-            "to create a temporary file, a backup, and replace gradle.properties."
+            "Check permissions on the reported path and its parent directory. Saving requires write access to the project directory " +
+            "for atomic replacement and to the system temp directory for backups."
         is NoSuchFileException -> "File or directory not found: ${error.file ?: error.message}.\n" +
             "Check the selected project and JSON paths in Settings."
         is AtomicMoveNotSupportedException -> "This filesystem does not support atomic file replacement: ${error.file}.\n" +

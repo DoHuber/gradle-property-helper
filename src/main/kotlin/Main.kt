@@ -164,8 +164,11 @@ class HelperWindow : JFrame("Gradle Property Helper") {
                         // last saved state until the complete group has been written successfully.
                         isSelected = state == FeatureState.ENABLED
                         guarded {
-                            snapshot = PropertiesEditor.apply(file!!, snapshot, values)
-                            render(); status.text = "Saved ${feature.label}. Previous file backed up as gradle.properties.bak."
+                            val saved = PropertiesEditor.apply(file!!, snapshot, values)
+                            snapshot = saved.text
+                            render()
+                            status.text = "Saved ${feature.label}." + (saved.backupPath?.let { " Backup: $it" } ?: "")
+                            status.toolTipText = saved.backupPath?.toString()
                         }
                     }
                 }, cell(1))
