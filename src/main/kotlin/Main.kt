@@ -135,21 +135,30 @@ class HelperWindow : JFrame("Gradle Property Helper") {
         if (file != null) config?.features?.forEach { feature ->
             val state = PropertiesEditor.state(snapshot, feature)
             rows.add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-                add(JLabel("${feature.label}: ${state.name.lowercase()}").apply {
-                    toolTipText = PropertiesEditor.stateDetails(snapshot, feature)
-                })
-                fun button(title: String, values: Map<String, String?>, active: Boolean) {
-                    add(JButton(title).apply {
-                        isEnabled = !active
-                        toolTipText = values.entries.joinToString("; ") { "${it.key} = ${it.value ?: "(removed)"}" }
-                        addActionListener { guarded {
+                val nextEnabled = state != FeatureState.ENABLED
+                val values = if (nextEnabled) feature.enabled else feature.disabled
+                val stateLabel = when (state) {
+                    FeatureState.ENABLED -> "Enabled"
+                    FeatureState.DISABLED -> "Disabled"
+                    FeatureState.MIXED -> "Mixed"
+                }
+                add(JToggleButton("${feature.label}: $stateLabel", state == FeatureState.ENABLED).apply {
+                    toolTipText = PropertiesEditor.stateDetails(snapshot, feature) +
+                        "; Click to " + (if (nextEnabled) "enable" else "disable") + " this group."
+                    accessibleContext.accessibleName = "${feature.label}: $stateLabel"
+                    accessibleContext.accessibleDescription = if (state == FeatureState.MIXED) {
+                        "Properties are mixed. Activate to enable the whole group."
+                    } else "Activate to " + (if (nextEnabled) "enable" else "disable") + " this group."
+                    addActionListener {
+                        // Swing changes selection before notifying listeners. Show only the
+                        // last saved state until the complete group has been written successfully.
+                        isSelected = state == FeatureState.ENABLED
+                        guarded {
                             snapshot = PropertiesEditor.apply(file!!, snapshot, values)
                             render(); status.text = "Saved ${feature.label}. Previous file backed up as gradle.properties.bak."
-                        } }
-                    })
-                }
-                button("Enable", feature.enabled, state == FeatureState.ENABLED)
-                button("Disable", feature.disabled, state == FeatureState.DISABLED)
+                        }
+                    }
+                })
             })
         }
         rows.revalidate(); rows.repaint()

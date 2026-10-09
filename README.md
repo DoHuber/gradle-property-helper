@@ -10,7 +10,7 @@ Install a Java 21 JDK (including `javac`) and set `JAVA_HOME` if needed.
 ./gradlew run
 ```
 
-Open **⚙ Settings**, select the project’s existing `gradle.properties` file directly, then load `features.example.json` or your own feature JSON. Each feature shows **enabled**, **disabled**, or **mixed** according to the current file. Enable/Disable applies every property in that group in one atomic file replacement. Hover over a feature state to see which keys match each state, are missing, or match neither state. Refresh reloads external edits. The picker validates the exact file path before saving it. Previously saved project directories remain supported; a missing properties file in an existing saved directory is created on the first change.
+Open **⚙ Settings**, select the project’s existing `gradle.properties` file directly, then load `features.example.json` or your own feature JSON. Each feature shows **enabled**, **disabled**, or **mixed** according to the current file. Each group has one toggle showing its current state: selected means enabled, unselected means disabled. Mixed groups are labeled **Mixed**; clicking them enables the whole group. Clicking an enabled group disables it. Each change applies every property in that group in one atomic file replacement. Failed writes keep the toggle in its previously saved state. Hover over a feature state to see which keys match each state, are missing, or match neither state. Refresh reloads external edits. The picker validates the exact file path before saving it. Previously saved project directories remain supported; a missing properties file in an existing saved directory is created on the first change.
 
 ## Saved settings
 
