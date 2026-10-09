@@ -10,7 +10,7 @@ Install a Java 21 JDK (including `javac`) and set `JAVA_HOME` if needed.
 ./gradlew run
 ```
 
-Open **⚙ Settings**, choose a local project directory, then load `features.example.json` or your own feature JSON. Each feature shows **enabled**, **disabled**, or **mixed** according to the current file. Enable/Disable applies every property in that group in one atomic file replacement. Refresh reloads external edits. A missing `gradle.properties` is created on the first change.
+Open **⚙ Settings**, choose a local project directory, then load `features.example.json` or your own feature JSON. Each feature shows **enabled**, **disabled**, or **mixed** according to the current file. Enable/Disable applies every property in that group in one atomic file replacement. Hover over a feature state to see which keys match each state, are missing, or match neither state. Refresh reloads external edits. A missing `gradle.properties` is created on the first change.
 
 ## Saved settings
 

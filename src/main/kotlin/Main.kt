@@ -78,6 +78,7 @@ class HelperWindow : JFrame("Gradle Property Helper") {
             val chooser = JFileChooser().apply { fileSelectionMode = JFileChooser.DIRECTORIES_ONLY }
             if (chooser.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION) {
                 val directory = chooser.selectedFile.toPath().toAbsolutePath().normalize()
+                require(java.nio.file.Files.isDirectory(directory)) { "Project directory is unavailable: $directory" }
                 val selected = directory.resolve("gradle.properties")
                 val content = PropertiesEditor.read(selected)
                 java.util.Properties().load(content.reader())
@@ -113,8 +114,9 @@ class HelperWindow : JFrame("Gradle Property Helper") {
     }
     private fun guarded(action: () -> Unit) {
         try { action() } catch (e: Exception) {
-            status.text = "No change applied: ${e.message}"
-            JOptionPane.showMessageDialog(this, e.message ?: e.javaClass.simpleName, "Unable to complete action", JOptionPane.ERROR_MESSAGE)
+            val message = ErrorMessages.describe(e)
+            status.text = "Action failed: ${message.lineSequence().first()}"
+            JOptionPane.showMessageDialog(this, message, "Unable to complete action", JOptionPane.ERROR_MESSAGE)
         }
     }
     private fun render() {
@@ -122,7 +124,9 @@ class HelperWindow : JFrame("Gradle Property Helper") {
         if (file != null) config?.features?.forEach { feature ->
             val state = PropertiesEditor.state(snapshot, feature)
             rows.add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-                add(JLabel("${feature.label}: ${state.name.lowercase()}"))
+                add(JLabel("${feature.label}: ${state.name.lowercase()}").apply {
+                    toolTipText = PropertiesEditor.stateDetails(snapshot, feature)
+                })
                 fun button(title: String, values: Map<String, String?>, active: Boolean) {
                     add(JButton(title).apply {
                         isEnabled = !active

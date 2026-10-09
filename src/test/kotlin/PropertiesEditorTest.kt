@@ -38,4 +38,25 @@ class PropertiesEditorTest {
         assertEquals(FeatureState.ENABLED, PropertiesEditor.state(PropertiesEditor.read(path), feature))
         assertFailsWith<IllegalArgumentException> { FeatureConfig(listOf(feature, feature.copy(id = "duplicate"))).validate() }
     }
+    @Test fun `missing project is an error while missing properties in existing project are supported`() {
+        assertEquals("", PropertiesEditor.read(directory.resolve("gradle.properties")))
+        assertFailsWith<NoSuchFileException> { PropertiesEditor.read(directory.resolve("missing/gradle.properties")) }
+    }
+    @Test fun `unreadable properties are not mistaken for an empty file`() {
+        val path = directory.resolve("gradle.properties")
+        Files.writeString(path, "url=local")
+        org.junit.jupiter.api.Assumptions.assumeTrue(Files.getFileStore(path).supportsFileAttributeView("posix"))
+        val permissions = Files.getPosixFilePermissions(path)
+        try {
+            Files.setPosixFilePermissions(path, emptySet())
+            org.junit.jupiter.api.Assumptions.assumeFalse(Files.isReadable(path), "Privileged users can bypass file permissions")
+            assertFailsWith<AccessDeniedException> { PropertiesEditor.read(path) }
+        } finally { Files.setPosixFilePermissions(path, permissions) }
+    }
+    @Test fun `mixed state diagnostics distinguish absent keys from mismatched values`() {
+        val details = PropertiesEditor.stateDetails("url=local\nauth=unexpected\n", feature)
+        assertTrue(details.contains("url: matches enabled"))
+        assertTrue(details.contains("auth: value matches neither state"))
+        assertTrue(PropertiesEditor.stateDetails("", feature).contains("url: missing"))
+    }
 }

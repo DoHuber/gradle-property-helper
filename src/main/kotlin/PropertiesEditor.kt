@@ -37,6 +37,22 @@ object PropertiesEditor {
         fun matches(values: Map<String, String?>) = values.all { (k, v) -> p.getProperty(k) == v }
         return when { matches(feature.enabled) -> FeatureState.ENABLED; matches(feature.disabled) -> FeatureState.DISABLED; else -> FeatureState.MIXED }
     }
+    fun stateDetails(text: String, feature: Feature): String {
+        val properties = parse(text)
+        return feature.enabled.keys.joinToString("; ") { key ->
+            val actual = properties.getProperty(key)
+            val enabled = actual == feature.enabled[key]
+            val disabled = actual == feature.disabled[key]
+            val description = when {
+                enabled && disabled -> "matches both states"
+                enabled -> "matches enabled"
+                disabled -> "matches disabled"
+                actual == null -> "missing (required by both states)"
+                else -> "value matches neither state"
+            }
+            "$key: $description"
+        }
+    }
     private fun escape(value: String): String = buildString {
         value.forEach { c -> append(when (c) {
             '\\' -> "\\\\"; '\n' -> "\\n"; '\r' -> "\\r"; '\t' -> "\\t"; ' ' -> "\\ ";
@@ -71,7 +87,14 @@ object PropertiesEditor {
         }
         return result.toString()
     }
-    fun read(path: Path): String = if (Files.exists(path)) String(Files.readAllBytes(path), StandardCharsets.ISO_8859_1) else ""
+    fun read(path: Path): String = try {
+        String(Files.readAllBytes(path), StandardCharsets.ISO_8859_1)
+    } catch (e: NoSuchFileException) {
+        // A new properties file is supported, but a missing project is an error.
+        // Do not use Files.exists: it also returns false when access is denied.
+        if (!Files.isDirectory(path.toAbsolutePath().parent) || Files.isSymbolicLink(path)) throw e
+        ""
+    }
     fun apply(path: Path, expected: String, values: Map<String, String?>): String {
         require(!Files.isSymbolicLink(path)) { "Symbolic links are not supported." }
         check(read(path) == expected) { "File changed externally. Refresh before applying." }
