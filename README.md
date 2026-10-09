@@ -12,6 +12,18 @@ Install a Java 21 JDK (including `javac`) and set `JAVA_HOME` if needed.
 
 Open **⚙ Settings**, choose a local project directory, then load `features.example.json` or your own feature JSON. Each feature shows **enabled**, **disabled**, or **mixed** according to the current file. Enable/Disable applies every property in that group in one atomic file replacement. Refresh reloads external edits. A missing `gradle.properties` is created on the first change.
 
+## Saved settings
+
+Project and feature JSON selections are saved immediately and restored on launch.
+On Linux, the file is `$XDG_CONFIG_HOME/gradle-property-helper/settings.json`,
+or `~/.config/gradle-property-helper/settings.json` when `XDG_CONFIG_HOME` is unset,
+empty, or relative (following the XDG directory specification).
+Only absolute paths are saved; feature definitions and toggle states are read
+from the selected files each launch. Settings are written atomically.
+Missing or invalid saved files produce a warning; the app still opens and
+restores any valid selection. Choose replacement paths in Settings.
+Delete `settings.json` while the app is closed to reset its selections.
+
 ## Configuration
 
 Each feature has a unique `id`, a `label`, and `enabled` / `disabled` objects with the same property keys. Values are strings; `null` removes a property. Keys may contain letters, digits, dots, underscores and hyphens. A property may belong to only one feature; conflicting configurations are rejected. See the example JSON.

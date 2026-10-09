@@ -12,6 +12,8 @@ fun main() {
 }
 
 class HelperWindow : JFrame("Gradle Property Helper") {
+    private val settingsStore = SettingsStore()
+    private var settings = AppSettings()
     private var file: Path? = null
     private var config: FeatureConfig? = null
     private var snapshot = ""
@@ -36,7 +38,26 @@ class HelperWindow : JFrame("Gradle Property Helper") {
         add(toolbar, BorderLayout.NORTH)
         add(JScrollPane(rows), BorderLayout.CENTER)
         add(status, BorderLayout.SOUTH)
+        restoreSettings()
         pack(); setLocationRelativeTo(null)
+    }
+    private fun restoreSettings() {
+        val restored = settingsStore.restore()
+        settings = restored.settings
+        file = restored.propertiesFile
+        snapshot = restored.propertiesText
+        config = restored.featureConfig
+        projectLabel.text = settings.projectDirectory ?: "No project selected"
+        configLabel.text = settings.featureConfigPath ?: "No configuration selected"
+        render()
+        status.text = when {
+            restored.warnings.isNotEmpty() -> "Some settings could not be restored. Open Settings to select them again."
+            file != null && config != null -> "Restored saved project and feature configuration."
+            else -> "Open Settings to choose a project and feature configuration."
+        }
+        if (restored.warnings.isNotEmpty()) SwingUtilities.invokeLater {
+            JOptionPane.showMessageDialog(this, restored.warnings.joinToString("\n"), "Settings restoration", JOptionPane.WARNING_MESSAGE)
+        }
     }
     private fun showSettings() {
         val dialog = JDialog(this, "Settings", true).apply {
@@ -56,8 +77,12 @@ class HelperWindow : JFrame("Gradle Property Helper") {
         addControl(projectLabel, "Choose project…") {
             val chooser = JFileChooser().apply { fileSelectionMode = JFileChooser.DIRECTORIES_ONLY }
             if (chooser.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION) {
-                val selected = chooser.selectedFile.toPath().resolve("gradle.properties")
+                val directory = chooser.selectedFile.toPath().toAbsolutePath().normalize()
+                val selected = directory.resolve("gradle.properties")
                 val content = PropertiesEditor.read(selected)
+                java.util.Properties().load(content.reader())
+                val updated = settings.copy(projectDirectory = directory.toString())
+                settingsStore.save(updated); settings = updated
                 file = selected; snapshot = content; projectLabel.text = selected.toString(); render()
                 dialog.pack()
             }
@@ -65,8 +90,12 @@ class HelperWindow : JFrame("Gradle Property Helper") {
         addControl(configLabel, "Load feature JSON…") {
             val chooser = JFileChooser().apply { fileFilter = javax.swing.filechooser.FileNameExtensionFilter("JSON configuration", "json") }
             if (chooser.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION) {
-                config = FeatureConfig.load(chooser.selectedFile.toPath())
-                configLabel.text = chooser.selectedFile.absolutePath; render()
+                val selected = chooser.selectedFile.toPath().toAbsolutePath().normalize()
+                val loaded = FeatureConfig.load(selected)
+                val updated = settings.copy(featureConfigPath = selected.toString())
+                settingsStore.save(updated); settings = updated
+                config = loaded
+                configLabel.text = selected.toString(); render()
                 dialog.pack()
             }
         }
