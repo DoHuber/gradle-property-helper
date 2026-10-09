@@ -36,7 +36,11 @@ class HelperWindow : JFrame("Gradle Property Helper") {
             }, BorderLayout.EAST)
         }
         add(toolbar, BorderLayout.NORTH)
-        add(JScrollPane(rows), BorderLayout.CENTER)
+        val featurePanel = JPanel(BorderLayout()).apply {
+            border = BorderFactory.createEmptyBorder(0, 8, 8, 8)
+            add(rows, BorderLayout.NORTH)
+        }
+        add(JScrollPane(featurePanel), BorderLayout.CENTER)
         add(status, BorderLayout.SOUTH)
         restoreSettings()
         pack(); setLocationRelativeTo(null)
@@ -134,18 +138,16 @@ class HelperWindow : JFrame("Gradle Property Helper") {
         rows.removeAll()
         if (file != null) config?.features?.forEach { feature ->
             val state = PropertiesEditor.state(snapshot, feature)
-            rows.add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+            rows.add(JPanel(FlowLayout(FlowLayout.LEFT, 8, 3)).apply {
+                alignmentX = LEFT_ALIGNMENT
                 val nextEnabled = state != FeatureState.ENABLED
                 val values = if (nextEnabled) feature.enabled else feature.disabled
-                val stateLabel = when (state) {
-                    FeatureState.ENABLED -> "Enabled"
-                    FeatureState.DISABLED -> "Disabled"
-                    FeatureState.MIXED -> "Mixed"
-                }
-                add(JToggleButton("${feature.label}: $stateLabel", state == FeatureState.ENABLED).apply {
+                val details = PropertiesEditor.stateDetails(snapshot, feature)
+                add(JLabel(feature.label).apply { toolTipText = details })
+                add(StateToggleButton(state).apply {
                     toolTipText = PropertiesEditor.stateDetails(snapshot, feature) +
                         "; Click to " + (if (nextEnabled) "enable" else "disable") + " this group."
-                    accessibleContext.accessibleName = "${feature.label}: $stateLabel"
+                    accessibleContext.accessibleName = "${feature.label}: $text"
                     accessibleContext.accessibleDescription = if (state == FeatureState.MIXED) {
                         "Properties are mixed. Activate to enable the whole group."
                     } else "Activate to " + (if (nextEnabled) "enable" else "disable") + " this group."
