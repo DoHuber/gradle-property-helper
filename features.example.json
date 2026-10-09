@@ -1,0 +1,16 @@
+{
+  "features": [
+    {
+      "id": "parallel-build",
+      "label": "Parallel build",
+      "enabled": { "org.gradle.parallel": "true" },
+      "disabled": { "org.gradle.parallel": "false" }
+    },
+    {
+      "id": "local-backend",
+      "label": "Use local backend",
+      "enabled": { "backend.url": "http://localhost:8080", "backend.auth.enabled": "false" },
+      "disabled": { "backend.url": "https://dev.example.com", "backend.auth.enabled": "true" }
+    }
+  ]
+}
