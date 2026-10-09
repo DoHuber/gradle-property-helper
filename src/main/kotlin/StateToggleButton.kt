@@ -1,4 +1,5 @@
 import java.awt.Color
+import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Insets
 import javax.swing.AbstractButton
@@ -33,4 +34,13 @@ class StateToggleButton(state: FeatureState) : JToggleButton(
         isContentAreaFilled = true
         margin = Insets(6, 12, 6, 12)
     }
+    override fun getPreferredSize(): Dimension {
+        val size = super.getPreferredSize()
+        val metrics = getFontMetrics(font)
+        val widestLabel = listOf("Enabled", "Disabled", "Mixed").maxOf { metrics.stringWidth(it) }
+        size.width += widestLabel - metrics.stringWidth(text ?: "")
+        return size
+    }
+
+    override fun getMinimumSize(): Dimension = preferredSize
 }
