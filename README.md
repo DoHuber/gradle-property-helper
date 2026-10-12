@@ -76,7 +76,7 @@ Build an installable ZIP from the repository root:
 ./gradlew buildPlugin
 ```
 
-The result is `intellij-plugin/build/distributions/gradle-property-helper-0.2.0.zip`.
+The result is `intellij-plugin/build/distributions/gradle-property-helper-0.2.1.zip`.
 The first build downloads the IDEA 2026.2.3 SDK from JetBrains; allow extra time and
 several GB of disk space. You can use your existing IDE installation instead:
 
@@ -98,8 +98,9 @@ IDE's workspace settings; files inside the project use relative paths.
 Desktop selections in `~/.config` remain independent.
 
 Each compact row has a label, a theme-aware state indicator, and an IDE-styled
-state toggle. Enabled toggles switch the whole group off; disabled or mixed
-toggles switch it on. Editor changes, external file changes and Undo/Redo refresh
+action button. Green means enabled with a **Disable** button; red means disabled
+with an **Enable** button. Orange means mixed, with an **Enable** button to enable
+the whole group. Editor changes, external file changes and Undo/Redo refresh
 the displayed states automatically. Refresh also reloads the feature JSON.
 
 Changes use the current IDE document, preserve unrelated **unsaved edits**, are

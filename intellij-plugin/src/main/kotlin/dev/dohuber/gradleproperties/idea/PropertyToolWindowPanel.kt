@@ -39,7 +39,7 @@ import java.awt.GridBagLayout
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.swing.JPanel
-import javax.swing.JToggleButton
+import javax.swing.JButton
 
 class PropertyToolWindowPanel(private val project: Project) : JBPanel<PropertyToolWindowPanel>(BorderLayout()), Disposable {
     private data class Snapshot(
@@ -177,21 +177,16 @@ class PropertyToolWindowPanel(private val project: Project) : JBPanel<PropertyTo
                 }
                 toolTipText = state.name.lowercase()
             }, cell(1))
-            val label = when (state) {
-                FeatureState.ENABLED -> "Enabled"
-                FeatureState.DISABLED -> "Disabled"
-                FeatureState.MIXED -> "Mixed"
-            }
-            rows.add(JToggleButton(label, state == FeatureState.ENABLED).apply {
+            val label = if (state == FeatureState.ENABLED) "Disable" else "Enable"
+            rows.add(JButton(label).apply {
                 val size = preferredSize
                 val metrics = getFontMetrics(font)
-                size.width += listOf("Enabled", "Disabled", "Mixed").maxOf { metrics.stringWidth(it) } - metrics.stringWidth(label)
+                size.width += listOf("Enable", "Disable").maxOf { metrics.stringWidth(it) } - metrics.stringWidth(label)
                 preferredSize = size
                 isEnabled = !saving
                 toolTipText = details + "; Click to " + (if (state == FeatureState.ENABLED) "disable" else "enable") + " this group."
                 accessibleContext.accessibleName = "${feature.label}: $label"
                 addActionListener {
-                    isSelected = state == FeatureState.ENABLED
                     applyFeature(loaded, feature)
                 }
             }, cell(2))
