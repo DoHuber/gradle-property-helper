@@ -1,0 +1,15 @@
+<idea-plugin>
+    <id>dev.dohuber.gradle-property-helper</id>
+    <name>Gradle Property Helper</name>
+    <vendor url="https://github.com/DoHuber/gradle-property-helper">DoHuber</vendor>
+    <description><![CDATA[
+        Toggle grouped gradle.properties settings from a project tool window.
+        Uses the same feature JSON as the standalone Gradle Property Helper.
+        Changes respect open editor documents and support Undo/Redo.
+    ]]></description>
+    <depends>com.intellij.modules.platform</depends>
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Gradle Properties" anchor="right" icon="AllIcons.Nodes.Property"
+                    factoryClass="dev.dohuber.gradleproperties.idea.PropertyToolWindowFactory"/>
+    </extensions>
+</idea-plugin>

@@ -1,3 +1,6 @@
+import dev.dohuber.gradleproperties.core.FeatureConfig
+import dev.dohuber.gradleproperties.core.FeatureState
+import dev.dohuber.gradleproperties.core.PropertiesEditor
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
@@ -30,7 +33,7 @@ class HelperWindow : JFrame("Gradle Property Helper") {
         val toolbar = JPanel(BorderLayout()).apply {
             border = BorderFactory.createEmptyBorder(8, 8, 8, 8)
             add(JButton("Refresh").apply { addActionListener { guarded {
-                file?.let { snapshot = PropertiesEditor.read(it) }; render(); status.text = "Refreshed from disk."
+                file?.let { snapshot = PropertyFiles.read(it) }; render(); status.text = "Refreshed from disk."
             } } }, BorderLayout.WEST)
             add(JButton("⚙ Settings").apply {
                 toolTipText = "Choose gradle.properties and feature configuration"
@@ -97,7 +100,7 @@ class HelperWindow : JFrame("Gradle Property Helper") {
                     "Select an existing gradle.properties file: $selected"
                 }
                 require(!java.nio.file.Files.isSymbolicLink(selected)) { "Symbolic-link property files are not supported: $selected" }
-                val content = PropertiesEditor.read(selected)
+                val content = PropertyFiles.read(selected)
                 java.util.Properties().load(content.reader())
                 val updated = settings.copy(projectDirectory = selected.parent.toString())
                 settingsStore.save(updated); settings = updated
@@ -164,7 +167,7 @@ class HelperWindow : JFrame("Gradle Property Helper") {
                         // last saved state until the complete group has been written successfully.
                         isSelected = state == FeatureState.ENABLED
                         guarded {
-                            val saved = PropertiesEditor.apply(file!!, snapshot, values)
+                            val saved = PropertyFiles.apply(file!!, snapshot, values)
                             snapshot = saved.text
                             render()
                             status.text = "Saved ${feature.label}." + (saved.backupPath?.let { " Backup: $it" } ?: "")

@@ -1,3 +1,5 @@
+import dev.dohuber.gradleproperties.core.FeatureState
+import dev.dohuber.gradleproperties.core.PropertiesEditor
 import kotlin.test.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir

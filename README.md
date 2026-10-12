@@ -1,6 +1,6 @@
 # Gradle Property Helper
 
-A small Kotlin/Swing desktop app for switching grouped `gradle.properties` settings. Uses Java 21; no browser runtime or server.
+A small Kotlin tool for switching grouped `gradle.properties` settings, available as a Swing desktop app and an IntelliJ IDEA plugin. Both use the same feature JSON and editing logic. The desktop app uses Java 21; no browser runtime or server.
 
 ## Run
 
@@ -59,8 +59,72 @@ The task creates the destination directory if needed and replaces the previous
 ## Build and test
 
 ```sh
-./gradlew test installDist
+./gradlew :test :installDist
 ./build/install/gradle-property-helper/bin/gradle-property-helper
 ```
 
 The distribution includes runtime libraries and requires Java 21. A graphical desktop is required for the UI; core tests run headlessly. No credentials are required. The Gradle wrapper downloads Gradle and Maven Central dependencies on first use.
+
+## IntelliJ IDEA plugin
+
+The plugin targets **IntelliJ IDEA 2026.2.x**, including 2026.2.3 (build 262).
+It uses standard platform APIs and does not need Ultimate-only features.
+
+Build an installable ZIP from the repository root:
+
+```sh
+./gradlew buildPlugin
+```
+
+The result is `intellij-plugin/build/distributions/gradle-property-helper-0.2.0.zip`.
+The first build downloads the IDEA 2026.2.3 SDK from JetBrains; allow extra time and
+several GB of disk space. You can use your existing IDE installation instead:
+
+```sh
+./gradlew buildPlugin -PideaHome=/absolute/path/to/idea
+```
+
+Use the installation root containing `product-info.json`, not its `bin` directory.
+This avoids downloading another IDE. It must be IDEA 2026.2.x.
+
+In IDEA, open **Settings → Plugins → ⚙ → Install Plugin from Disk…**, select the
+ZIP without extracting it, then restart if prompted. Open **View → Tool Windows
+→ Gradle Properties** (the right sidebar).
+
+The plugin defaults to `gradle.properties` in the open project's root. Use its
+Settings toolbar action to select a different properties file and the same
+feature JSON you use in the desktop app. Paths are saved per project in the
+IDE's workspace settings; files inside the project use relative paths.
+Desktop selections in `~/.config` remain independent.
+
+Each compact row has a label, a theme-aware state indicator, and an IDE-styled
+state toggle. Enabled toggles switch the whole group off; disabled or mixed
+toggles switch it on. Editor changes, external file changes and Undo/Redo refresh
+the displayed states automatically. Refresh also reloads the feature JSON.
+
+Changes use the current IDE document, preserve unrelated **unsaved edits**, are
+recorded as one undoable command, and save the selected properties document.
+A UTF-8 backup of the previous document text is kept in the system temp directory;
+the status shows its path. A properties/configuration change during a toggle is
+rejected rather than applying an outdated snapshot. Read-only files are handled
+through IDEA's writable-file check. The plugin does not trigger a Gradle sync or
+build automatically.
+
+Run plugin integration tests or launch a sandbox IDE:
+
+```sh
+./gradlew :intellij-plugin:test
+./gradlew :intellij-plugin:runIde
+```
+
+## Shared code and build targets
+
+- `core`: feature JSON parsing/validation, state matching and pure text editing.
+- `desktop`: Swing UI, Linux settings, atomic filesystem writes and temp backups.
+- `intellij-plugin`: project tool window, IDE settings, document commands and listeners.
+
+The existing desktop targets `standaloneJar`, `installStandaloneJar`, `run` and
+`installDist` retain their behavior and output locations. For only the core and
+desktop tests, use `./gradlew :test` (the leading colon selects the root task).
+The unqualified `test`/`build` commands may also select plugin tasks in this
+multi-project build and therefore need the IDEA SDK.

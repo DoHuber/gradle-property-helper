@@ -5,3 +5,4 @@ pluginManagement {
     }
 }
 rootProject.name = "gradle-property-helper"
+include("core", "desktop", "intellij-plugin")

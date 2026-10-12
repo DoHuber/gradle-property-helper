@@ -1,3 +1,4 @@
+import dev.dohuber.gradleproperties.core.FeatureConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -39,7 +40,7 @@ class SettingsStore(val path: Path = defaultPath()) {
                 val directory = Path.of(saved)
                 require(directory.isAbsolute && Files.isDirectory(directory)) { "Project directory is unavailable: $saved" }
                 val candidate = directory.resolve("gradle.properties")
-                val content = PropertiesEditor.read(candidate)
+                val content = PropertyFiles.read(candidate)
                 java.util.Properties().load(content.reader())
                 propertiesFile = candidate; text = content
             } catch (e: Exception) { warnings.add("Could not restore project: ${e.message}") }

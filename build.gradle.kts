@@ -1,38 +1,25 @@
 plugins {
-    kotlin("jvm") version "2.1.20"
-    kotlin("plugin.serialization") version "2.1.20"
-    application
+    base
+    kotlin("jvm") version "2.4.20" apply false
+    kotlin("plugin.serialization") version "2.4.20" apply false
 }
-repositories { mavenCentral() }
-dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-    testImplementation(kotlin("test-junit5"))
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-kotlin { jvmToolchain(21) }
-application { mainClass.set("MainKt") }
-tasks.test { useJUnitPlatform() }
 
-// Bundle this small application's runtime libraries into one executable JAR.
-val standaloneJar by tasks.registering(Jar::class) {
-    group = "build"
-    description = "Builds a standalone executable JAR with all runtime dependencies."
-    archiveClassifier.set("standalone")
-    manifest { attributes["Main-Class"] = application.mainClass.get() }
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from(sourceSets.main.get().output)
-    dependsOn(configurations.runtimeClasspath)
-    from({ configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) } })
-    // Dependency signatures and module descriptors do not describe the combined JAR.
-    exclude("META-INF/*.SF", "META-INF/*.RSA", "META-INF/*.DSA", "META-INF/INDEX.LIST")
-    exclude("module-info.class", "META-INF/versions/**/module-info.class")
+allprojects {
+    group = "dev.dohuber.gradleproperties"
+    version = "0.2.0"
+    repositories { mavenCentral() }
 }
-tasks.assemble { dependsOn(standaloneJar) }
 
-// Override with -PtoolsDir=/another/path when installing on another machine.
-tasks.register<Copy>("installStandaloneJar") {
+// Keep the existing desktop commands and artifact locations available at the root.
+tasks.register("standaloneJar") { dependsOn(":desktop:standaloneJar") }
+tasks.register("installStandaloneJar") { dependsOn(":desktop:installStandaloneJar") }
+tasks.register("installDist") { dependsOn(":desktop:installDist") }
+tasks.register("run") { dependsOn(":desktop:run") }
+tasks.register("test") { dependsOn(":core:test", ":desktop:test") }
+tasks.named("assemble") { dependsOn(":desktop:assemble") }
+tasks.named("check") { dependsOn(":core:test", ":desktop:test") }
+tasks.register("buildPlugin") {
     group = "distribution"
-    description = "Builds the standalone JAR and copies it to /home/dominik/Tools (or -PtoolsDir)."
-    from(standaloneJar.flatMap { it.archiveFile })
-    into(providers.gradleProperty("toolsDir").orElse("/home/dominik/Tools"))
+    description = "Builds the installable IntelliJ IDEA plugin ZIP."
+    dependsOn(":intellij-plugin:buildPlugin")
 }

@@ -1,3 +1,7 @@
+import dev.dohuber.gradleproperties.core.Feature
+import dev.dohuber.gradleproperties.core.FeatureConfig
+import dev.dohuber.gradleproperties.core.FeatureState
+import dev.dohuber.gradleproperties.core.PropertiesEditor
 import kotlin.test.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -25,8 +29,8 @@ class PropertiesEditorTest {
     @Test fun `atomic save creates backup and rejects stale snapshot`() {
         val path = directory.resolve("gradle.properties")
         Files.writeString(path, "url=old\n")
-        val updated = PropertiesEditor.apply(path, "url=old\n", feature.enabled)
-        assertEquals(updated.text, PropertiesEditor.read(path))
+        val updated = PropertyFiles.apply(path, "url=old\n", feature.enabled)
+        assertEquals(updated.text, PropertyFiles.read(path))
         val backup = assertNotNull(updated.backupPath)
         try {
             assertEquals(Path.of(System.getProperty("java.io.tmpdir")).toRealPath(), backup.parent.toRealPath())
@@ -34,19 +38,19 @@ class PropertiesEditorTest {
             assertFalse(Files.exists(directory.resolve("gradle.properties.bak")))
         } finally { Files.deleteIfExists(backup) }
         Files.writeString(path, "external=true\n")
-        assertFailsWith<IllegalStateException> { PropertiesEditor.apply(path, updated.text, feature.disabled) }
+        assertFailsWith<IllegalStateException> { PropertyFiles.apply(path, updated.text, feature.disabled) }
         assertEquals("external=true\n", Files.readString(path))
     }
     @Test fun `creates missing file and configuration rejects conflicting keys`() {
         val path = directory.resolve("gradle.properties")
-        val saved = PropertiesEditor.apply(path, "", feature.enabled)
+        val saved = PropertyFiles.apply(path, "", feature.enabled)
         assertNull(saved.backupPath)
-        assertEquals(FeatureState.ENABLED, PropertiesEditor.state(PropertiesEditor.read(path), feature))
+        assertEquals(FeatureState.ENABLED, PropertiesEditor.state(PropertyFiles.read(path), feature))
         assertFailsWith<IllegalArgumentException> { FeatureConfig(listOf(feature, feature.copy(id = "duplicate"))).validate() }
     }
     @Test fun `missing project is an error while missing properties in existing project are supported`() {
-        assertEquals("", PropertiesEditor.read(directory.resolve("gradle.properties")))
-        assertFailsWith<NoSuchFileException> { PropertiesEditor.read(directory.resolve("missing/gradle.properties")) }
+        assertEquals("", PropertyFiles.read(directory.resolve("gradle.properties")))
+        assertFailsWith<NoSuchFileException> { PropertyFiles.read(directory.resolve("missing/gradle.properties")) }
     }
     @Test fun `unreadable properties are not mistaken for an empty file`() {
         val path = directory.resolve("gradle.properties")
@@ -56,7 +60,7 @@ class PropertiesEditorTest {
         try {
             Files.setPosixFilePermissions(path, emptySet())
             org.junit.jupiter.api.Assumptions.assumeFalse(Files.isReadable(path), "Privileged users can bypass file permissions")
-            assertFailsWith<AccessDeniedException> { PropertiesEditor.read(path) }
+            assertFailsWith<AccessDeniedException> { PropertyFiles.read(path) }
         } finally { Files.setPosixFilePermissions(path, permissions) }
     }
     @Test fun `mixed state diagnostics distinguish absent keys from mismatched values`() {
@@ -72,9 +76,9 @@ class PropertiesEditorTest {
         Files.writeString(sidecar, "existing user backup")
         val backups = mutableListOf<Path>()
         try {
-            val first = PropertiesEditor.apply(path, "url=old\n", feature.enabled)
+            val first = PropertyFiles.apply(path, "url=old\n", feature.enabled)
             backups.add(assertNotNull(first.backupPath))
-            val second = PropertiesEditor.apply(path, first.text, feature.disabled)
+            val second = PropertyFiles.apply(path, first.text, feature.disabled)
             backups.add(assertNotNull(second.backupPath))
             assertNotEquals(backups[0], backups[1])
             assertEquals("url=old\n", Files.readString(backups[0]))

@@ -1,3 +1,4 @@
+import dev.dohuber.gradleproperties.core.FeatureState
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
