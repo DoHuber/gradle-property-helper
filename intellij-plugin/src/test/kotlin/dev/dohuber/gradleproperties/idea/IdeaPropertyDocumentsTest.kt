@@ -4,6 +4,8 @@ import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.openapi.util.Disposer
+import com.intellij.util.ui.UIUtil
 import dev.dohuber.gradleproperties.core.Feature
 import dev.dohuber.gradleproperties.core.FeatureState
 import dev.dohuber.gradleproperties.core.PropertiesEditor
@@ -25,6 +27,21 @@ class IdeaPropertyDocumentsTest : BasePlatformTestCase() {
         myFixture.performEditorAction(IdeActions.ACTION_UNDO)
         assertEquals(before, document.text)
         myFixture.performEditorAction(IdeActions.ACTION_REDO)
+        assertEquals(FeatureState.ENABLED, PropertiesEditor.state(document.text, feature))
+    }
+    fun testDeferredToggleUsesWriteSafeUiCallback() {
+        val file = myFixture.configureByText("gradle.properties", "org.gradle.parallel=false\n").virtualFile
+        val document = FileDocumentManager.getInstance().getDocument(file)!!
+        val before = document.text
+        val panel = PropertyToolWindowPanel(project)
+        Disposer.register(testRootDisposable, panel)
+        var completed = false
+        panel.onUi {
+            IdeaPropertyDocuments.toggle(project, file, document, before, feature)
+            completed = true
+        }
+        UIUtil.dispatchAllInvocationEvents()
+        assertTrue("The deferred write callback should execute", completed)
         assertEquals(FeatureState.ENABLED, PropertiesEditor.state(document.text, feature))
     }
     fun testStaleSnapshotIsRejectedWithoutOverwritingEditor() {

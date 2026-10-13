@@ -59,3 +59,9 @@ tasks.named<Zip>("buildPlugin") {
 tasks.withType<KotlinJvmCompile>().configureEach {
     compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
 }
+
+// These tests use platform documents/UI only. The bundled Ultimate startup
+// extension fails to initialize in the platform test fixture.
+tasks.named<org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask>("prepareTestSandbox") {
+    disabledPlugins.add("com.intellij.modules.ultimate")
+}

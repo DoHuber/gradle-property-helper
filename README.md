@@ -76,7 +76,7 @@ Build an installable ZIP from the repository root:
 ./gradlew buildPlugin
 ```
 
-The result is `intellij-plugin/build/distributions/gradle-property-helper-0.2.1.zip`.
+The result is `intellij-plugin/build/distributions/gradle-property-helper-0.2.2.zip`.
 The first build downloads the IDEA 2026.2.3 SDK from JetBrains; allow extra time and
 several GB of disk space. You can use your existing IDE installation instead:
 

@@ -95,10 +95,12 @@ class PropertyToolWindowPanel(private val project: Project) : JBPanel<PropertyTo
         refresh()
     }
     override fun dispose() { disposed = true }
-    private fun onUi(action: () -> Unit) {
+    internal fun onUi(action: () -> Unit) {
+        // These callbacks include document writes. `any()` explicitly marks
+        // callbacks write-unsafe, even when no dialog is currently open.
         ApplicationManager.getApplication().invokeLater({
             if (!disposed && !project.isDisposed) action()
-        }, ModalityState.any())
+        }, ModalityState.nonModal())
     }
     private fun scheduleRefresh() = onUi {
         alarm.cancelAllRequests()
